@@ -164,17 +164,19 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 						selector.addClass('error').after('<span class="error-label">Theirs: ' + valServerSide + '</span>');
 						$('div.error').show();
-						$('.save').attr('disabled', 'disabled').find('.ui-btn-text').text('Submit');
+						$('.save').addClass('mine').removeClass('save')
+						$('.mine .ui-btn-text').text('Mine');
 					
 					}
 
 				});
 
 				this.$el.find('input, textarea').attr('disabled', 'disabled');
+				$('.mine').after('<a href="#" class="theirs ui-btn ui-shadow ui-btn-corner-all ui-btn-inline ui-btn-icon-left ui-btn-up-b" data-role="button" data-inline="true" data-icon="check" data-theme="b" data-corners="true" data-shadow="true" data-iconshadow="true" data-wrapperels="span"><span class="ui-btn-inner ui-btn-corner-all"><span class="ui-btn-text">Theirs</span><span class="ui-icon ui-icon-check ui-icon-shadow">&nbsp;</span></span></a>')
 
 				this.storeLocalCopy( newLocalCopy );
 				this.objOnServer = newLocalCopy;
-				localStorage.setItem('merged-branch', JSON.stringify( mergedLocalCopy ) )
+				localStorage.setItem('merged-branch', JSON.stringify(mergedLocalCopy) )
 
 			} else {
 
