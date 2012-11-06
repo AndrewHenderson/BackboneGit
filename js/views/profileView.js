@@ -4,8 +4,6 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 	'use strict';
 
 	App.ProfileView = Backbone.View.extend({
-
-		className: 'profile-form',
 	
 		template: Handlebars.compile( ProfileTemplate ),
 		
@@ -13,32 +11,26 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			this.model.on( 'change', this.render, this );
 
-			this.storeLocalCopy();
+			this.storeLocalCopy( this.model );
 		
 		},
 
-		storeLocalCopy: function ( latestFromServer ) {
+		storeLocalCopy: function ( latestCheckout ) {
 
-			// Creates a local branch of the latest object from server
+			// Create a local branch of the latest checkout
 
-			if ( typeof latestFromServer !== 'undefined' ) {
+			var latestCheckout = JSON.stringify( latestCheckout );
 
-				localStorage.setItem( 'local-branch', JSON.stringify( latestFromServer ) );
-
-			} else {
-
-				localStorage.setItem( 'local-branch', JSON.stringify( this.model ) );
-
-			}
+			localStorage.setItem( 'local-branch', latestCheckout );
 
 		},
 
 		events: {
 
-			'vclick .save': 'packageObj',
-			'vclick .cancel': 'cancel',
-			'vclick .mine': 'takeMine',
-			'vclick .theirs': 'takeTheirs'
+			'click .save': 'packageObj',
+			'click .cancel': 'cancel',
+			'click .mine': 'takeMine',
+			'click .theirs': 'takeTheirs'
 
 		},
 		
@@ -110,7 +102,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			obj.lastSync = $.parseJSON( localStorage.getItem('local-branch') );
 
-			this.compareOnServer(obj);
+			this.sendObj(obj);
 
 		},
 
@@ -122,19 +114,19 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.'
 		},
 
-		compareOnServer: function ( obj ) {
+		sendObj: function ( objFromClient ) {
 
 			// console.log('Comparing: ', obj.lastSync, 'with ', this.objOnServer );
 
-			if ( !_.isEqual( obj.lastSync, this.objOnServer ) ) {
+			if ( !_.isEqual( objFromClient.lastSync, this.objOnServer ) ) {
 
-				console.log("Doesn't match server copy");
+				console.log("doesn't match server copy");
 
 				this.serverResponse(false, this.objOnServer);
 
 			} else {
 
-				console.log("Matches server copy");
+				console.log("matches server copy");
 
 				this.serverResponse(true);
 
@@ -142,29 +134,28 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
-		serverResponse: function ( response, objFromServer ) {
+		serverResponse: function ( response, objOnServer ) {
 
 			if ( response === false ) {
 
+				// Failed submission
+
 				var localCopy = $.parseJSON( localStorage.getItem('local-branch') ),
-					newLocalCopy = localCopy,
-					mergedLocalCopy = this.newAttributes();
+					newAttributes = this.newAttributes();
 
 				$.each(localCopy, function ( key, value ) {
 
-					var valServerSide = objFromServer[key],
+					var valueOnServer = objOnServer[key],
+						valueEntered = newAttributes[ key ],
 						selector = $('#' + key);
 					
-					if ( value !== valServerSide ) {
+					if ( value !== valueOnServer && valueEntered !== valueOnServer ) {
 
-						console.log('mismatch: ', value, valServerSide );
+						console.log('mismatch: ', value, valueOnServer );
 
-						newLocalCopy[ key ] = valServerSide;
-						mergedLocalCopy[ key ] = valServerSide;
-
-						selector.addClass('error').after('<span class="error-label mine" data-value="' + valServerSide + '">Theirs: ' + valServerSide + '</span>').after('<span class="error-label mine" data-value="' + value + '">Mine: ' + value + '</span>');
+						selector.addClass('error').after('<span class="error-label mine" data-value="' + valueOnServer + '">Theirs: ' + valueOnServer + '</span>').after('<span class="error-label mine" data-value="' + valueEntered + '">Mine: ' + valueEntered + '</span>');
 						$('div.error').show();
-						$('.save').attr('disabled', 'disabled').find('.ui-btn-text').text('Submit');
+						$('.save').attr('disabled', 'disabled').text('Submit');
 					
 					}
 
@@ -172,13 +163,13 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				this.$el.find('input, textarea').attr('disabled', 'disabled');
 
-				this.storeLocalCopy( newLocalCopy );
-				this.objOnServer = newLocalCopy;
-				localStorage.setItem('merged-branch', JSON.stringify( mergedLocalCopy ) )
+				this.storeLocalCopy( objOnServer );
+				this.objOnServer = objOnServer;
+				localStorage.setItem('previous-branch', JSON.stringify( localCopy ) )
 
 			} else {
 
-				console.log('success');
+				// Successful submission
 
 				this.removeErrors();
 
@@ -192,14 +183,14 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				}
 
-				if ( localStorage.getItem('merged-branch') ) {
+				if ( localStorage.getItem('previous-branch') ) {
 
-					localStorage.removeItem('merged-branch');
+					localStorage.removeItem('previous-branch');
 
 				}
 
 				this.objOnServer = this.newAttributes();
-				this.storeLocalCopy( this.newAttributes() );
+				this.storeLocalCopy( this.objOnServer );
 
 				this.$el.find('input, textarea').removeAttr('disabled');
 
@@ -235,6 +226,23 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
+
+		cancel: function () {
+
+			var previousBranch = localStorage.getItem('previous-branch');
+			
+			localStorage.setItem('local-branch', previousBranch );
+			localStorage.removeItem('previous-branch');
+
+			$('.save').attr('disabled', 'disabled').text('Save');
+
+			this.removeErrors();
+			this.enableSubmit();
+
+			return false;
+
+		},
+
 		checkErrors: function () {
 
 			var numErrors = this.$el.find('.error-label').length;
@@ -244,23 +252,30 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 				$('div.error').hide();
 				$('.success').show();
 
+				this.enableSubmit();
+
 			}
-
-		},
-
-		cancel: function () {
-
-			this.render();
-
-			return false;
 
 		},
 
 		removeErrors: function () {
 
 			this.$el.find('input.error, textarea.erorr').removeClass('error');
-			$('div.error').hide();
+			$('div.error, div.success').hide();
 			this.$el.find('.error-label').remove();
+			$('input, textarea').removeAttr('disabled');
+
+		},
+
+		disableSubmit: function () {
+
+			$('.save').attr('disabled', 'disabled');
+
+		},
+
+		enableSubmit: function () {
+
+			$('.save').removeAttr('disabled');
 
 		},
 
@@ -271,23 +286,6 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			this.$city.val(this.$cityVal);
 			this.$state.val(this.$stateVal);
 			this.$bio.val(this.$bioVal);
-
-		},
-
-		getUpdate: function () {
-
-			console.log('remote change...');
-
-			var updatedModel = this.model.clone();
-
-			// Fake database change
-			updatedModel.set({ first: 'Tony', last: 'LeVoci' });
-
-			localStorage.setItem('local-branch', JSON.stringify(updatedModel) );
-
-			this.compare();
-
-			return false;
 
 		},
 		
