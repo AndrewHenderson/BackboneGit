@@ -1,4 +1,4 @@
 BackboneGit
 ===========
 
-Manage conflicts when committing your Backbone model to the server.
+Manage conflicts client-side when committing your Backbone model to the server.
