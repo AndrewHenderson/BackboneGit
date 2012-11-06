@@ -147,7 +147,8 @@ div.error {
 	margin: 12px 0 0 10px;
 }
 .success {
-	border: 1px solid green;
+	color: green;
+	display: none;
 }
 .response-label {
 	position: fixed;
