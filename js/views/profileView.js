@@ -77,52 +77,50 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			console.log('packaging new object...');
 
-			var obj = obj || {};
-			var newAttributes = this.newAttributes();
+			var self = this,
+				obj = obj || {},
+				localBranch = $.parseJSON( localStorage.getItem('local-branch') ),
+				newAttributes = this.newAttributes();
+			obj.passphrase = localBranch;
 
-			if ( newAttributes.first !== this.model.get('first') ) {
-				obj.first = newAttributes.first;
-			}
+			$.each(newAttributes, function ( key, value ) {
 
-			if ( newAttributes.last !== this.model.get('last') ) {
-				obj.last = newAttributes.last;
-			}
+				if ( newAttributes[key] !== self.model.get(key) ) {
+					
+					obj[key] = newAttributes[key];
 
-			if ( newAttributes.city !== this.model.get('city') ) {
-				obj.city = newAttributes.city;
-			}
+				}
 
-			if ( newAttributes.state !== this.model.get('state') ) {
-				obj.state = newAttributes.state;
-			}
+			});
 
-			if ( newAttributes.bio !== this.model.get('bio') ) {
-				obj.bio = newAttributes.bio;
-			}
-
-			obj.lastSync = $.parseJSON( localStorage.getItem('local-branch') );
-
-			this.sendObj(obj);
+			this.compareObj(obj);
 
 		},
 
-		objOnServer: {
-			first: 'Steve',
-			last: 'Evans',
-			city: 'Los Angeles',
-			state: 'California',
-			bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.'
-		},
-
-		sendObj: function ( objFromClient ) {
+		compareObj: function ( objFromClient ) {
 
 			// console.log('Comparing: ', obj.lastSync, 'with ', this.objOnServer );
 
-			if ( !_.isEqual( objFromClient.lastSync, this.objOnServer ) ) {
+			var self = this,
+				serverAttr = {},
+				passAttr = {};
+
+			$.each( objFromClient.passphrase, function ( key, value ) {
+
+				if ( objFromClient[key] !== self.objOnServer[key] && objFromClient.passphrase[key] !== self.objOnServer[key] ) {
+
+					serverAttr[key] = self.objOnServer[key];
+					passAttr[key] = objFromClient.passphrase[key];
+
+				}
+
+			});
+
+			if ( !_.isEqual( passAttr, serverAttr ) ) {
 
 				console.log("doesn't match server copy");
 
-				this.serverResponse(false, this.objOnServer);
+				this.serverResponse(false, serverAttr);
 
 			} else {
 
@@ -134,24 +132,30 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
-		serverResponse: function ( response, objOnServer ) {
+		serverResponse: function ( response, serverAttr ) {
+
+			console.log('ServerAttr: ', serverAttr);
 
 			if ( response === false ) {
 
 				// Failed submission
 
 				var localCopy = $.parseJSON( localStorage.getItem('local-branch') ),
+					objOnServer = this.objOnServer,
 					newAttributes = this.newAttributes();
 
-				$.each(localCopy, function ( key, value ) {
+				$.each(serverAttr, function ( key, value ) {
 
-					var valueOnServer = objOnServer[key],
+					var valueOnServer = serverAttr[ key ],
+						valueOnLocal = localCopy[ key ],
 						valueEntered = newAttributes[ key ],
 						selector = $('#' + key);
 					
-					if ( value !== valueOnServer && valueEntered !== valueOnServer ) {
+					if ( value !== valueOnLocal && value !== valueEntered ) {
 
-						console.log('mismatch: ', value, valueOnServer );
+						console.log('mismatch: ', 'server: ', value, ' local: ', valueOnLocal, ' entered: ', valueEntered );
+
+						objOnServer[key] = value;
 
 						selector.addClass('error').after('<span class="error-label mine" data-value="' + valueOnServer + '">Theirs: ' + valueOnServer + '</span>').after('<span class="error-label mine" data-value="' + valueEntered + '">Mine: ' + valueEntered + '</span>');
 						$('div.error').show();
@@ -231,8 +235,12 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			var previousBranch = localStorage.getItem('previous-branch');
 			
-			localStorage.setItem('local-branch', previousBranch );
-			localStorage.removeItem('previous-branch');
+			if ( typeof previousBranch === 'string' ) {
+
+				localStorage.setItem('local-branch', previousBranch );
+				localStorage.removeItem('previous-branch');
+
+			}
 
 			$('.save').attr('disabled', 'disabled').text('Save');
 
@@ -298,7 +306,15 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			this.$el = null;
 			this.el = null;
 		
-		}
+		},
+
+		objOnServer: {
+			first: 'Steve',
+			last: 'Evans',
+			city: 'Los Angeles',
+			state: 'California',
+			bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.'
+		},
 		
 	});
 
