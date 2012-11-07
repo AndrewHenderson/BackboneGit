@@ -17,7 +17,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		storeLocalCopy: function ( latestCheckout ) {
 
-			// Create a local branch of the latest checkout
+			// Create a local branch of the latest checkout to keep in LocalStorage
 
 			var latestCheckout = JSON.stringify( latestCheckout );
 
@@ -40,20 +40,19 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		
 			this.$el.html( this.template( this.model.toJSON() ) );
 
-			// variables
+			// jQuery wrapped variable references to input fields
 			this.$first = this.$('#first');
 			this.$last = this.$('#last');
 			this.$city = this.$('#city');
 			this.$state = this.$('#state');
 			this.$bio = this.$('#bio');
 
-			this.$firstVal = this.$('#first').val().trim(); // Storing data for Cancel Event
-			this.$lastVal = this.$('#last').val().trim(); // Storing data for Cancel Event
-			this.$cityVal = this.$('#city').val().trim(); // Storing data for Cancel Event
-			this.$stateVal = this.$('#state').val().trim(); // Storing data for Cancel Event
-			this.$bioVal = this.$('#bio').val().trim(); // Storing data for Cancel Event
-
-			// this.$el.find('input, textarea').textinput(); // jQuery Mobile Custom Widget
+			// Storing data for Cancel Event
+			this.$firstVal = this.$('#first').val().trim(); 
+			this.$lastVal = this.$('#last').val().trim();
+			this.$cityVal = this.$('#city').val().trim();
+			this.$stateVal = this.$('#state').val().trim();
+			this.$bioVal = this.$('#bio').val().trim();
 			
 			return this;
 		
@@ -61,6 +60,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		newAttributes: function() {
 
+			// Return current user entered values
 			return {
 
 				first: this.$first.val().trim(),
@@ -73,33 +73,36 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
-		packageObj: function ( event, obj ) {
+		packageObj: function ( event ) {
 
-			console.log('packaging new object...');
+			// Create package to send to server
+
+			// console.log('packaging new object...');
 
 			var self = this,
-				obj = obj || {},
+				clientPackage = {},
 				localBranch = $.parseJSON( localStorage.getItem('local-branch') ),
 				newAttributes = this.newAttributes();
-			obj.passphrase = localBranch;
+				clientPackage.passphrase = localBranch; // Put copy of local branch in package
 
+			// Compare current values to latest checkout
 			$.each(newAttributes, function ( key, value ) {
 
-				if ( newAttributes[key] !== self.model.get(key) ) {
+				if ( newAttributes[key] !== localBranch[key] ) {
 					
-					obj[key] = newAttributes[key];
+					clientPackage[key] = newAttributes[key]; // If values to match add them to the package
 
 				}
 
 			});
 
-			this.compareObj(obj);
+			this.compareObj(clientPackage); // Send package to server for comparison
 
 		},
 
 		compareObj: function ( objFromClient ) {
 
-			// console.log('Comparing: ', obj.lastSync, 'with ', this.objOnServer );
+			console.log(objFromClient);
 
 			var self = this,
 				serverAttr = {},
@@ -107,15 +110,17 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			$.each( objFromClient.passphrase, function ( key, value ) {
 
+				// Compare: If neither the value entered nor the value in the passphrase match the server...
 				if ( objFromClient[key] !== self.objOnServer[key] && objFromClient.passphrase[key] !== self.objOnServer[key] ) {
 
-					serverAttr[key] = self.objOnServer[key];
-					passAttr[key] = objFromClient.passphrase[key];
+					serverAttr[key] = self.objOnServer[key]; // Add the server value to a new object
+					passAttr[key] = objFromClient.passphrase[key]; // Add the passphrase value to a new object
 
 				}
 
 			});
 
+			// Compare the two new objects (server values and new passphrase)
 			if ( !_.isEqual( passAttr, serverAttr ) ) {
 
 				console.log("doesn't match server copy");
@@ -239,6 +244,14 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				localStorage.setItem('local-branch', previousBranch );
 				localStorage.removeItem('previous-branch');
+
+			} else {
+
+				this.$('#first').val(this.$firstVal); // Storing data for Cancel Event
+				this.$('#last').val(this.$lastVal); // Storing data for Cancel Event
+				this.$('#city').val(this.$cityVal); // Storing data for Cancel Event
+				this.$('#state').val(this.$stateVal); // Storing data for Cancel Event
+				this.$('#bio').val(this.$bioVal); // Storing data for Cancel Event
 
 			}
 
