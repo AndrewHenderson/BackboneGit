@@ -5,23 +5,23 @@
 	<span class="response-label"></span>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="first">First Name</label>
-		<input type="text" name="first" id="first" value="{{first}}" placeholder="First Name"/>
+		<input type="text" name="first" id="first" value="{{first}}" placeholder="First Name" data-sync="first" />
 	</div>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="last">Last Name</label>
-		<input type="text" name="last" id="last" value="{{last}}" placeholder="Last Name"/>
+		<input type="text" name="last" id="last" value="{{last}}" placeholder="Last Name" data-sync="last"/>
 	</div>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="city">City</label>
-		<input type="text" name="city" id="city" value="{{city}}" placeholder="City"/>
+		<input type="text" name="city" id="city" value="{{city}}" placeholder="City" data-sync="city" />
 	</div>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="state">State</label>
-		<input type="text" name="state" id="state" value="{{state}}" placeholder="State"/>
+		<input type="text" name="state" id="state" value="{{state}}" placeholder="State" data-sync="state" />
 	</div>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="bio">Biography</label>
-		<textarea name="bio" id="bio" placeholder="Biography" rows="6">{{bio}}</textarea>
+		<textarea name="bio" id="bio" placeholder="Biography" rows="6" data-sync="bio">{{bio}}</textarea>
 	</div>
 	<div class="error">*The highlighted fields have changed since you last checked them out of the database.
 		<br>Please resolve the conflicts above by selecting which version you would like to use.

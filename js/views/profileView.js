@@ -38,21 +38,27 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			console.log('render...');
 		
+			// Render
 			this.$el.html( this.template( this.model.toJSON() ) );
 
-			// jQuery wrapped variable references to input fields
-			this.$first = this.$('#first');
-			this.$last = this.$('#last');
-			this.$city = this.$('#city');
-			this.$state = this.$('#state');
-			this.$bio = this.$('#bio');
+			// Construct dataSync Object
+			this.dataSync = {};
+			this.dataSync.HOOK = 'data-sync'; // ENTER YOUR CUSTOM DATA ATTRIBUTE
+			this.dataSync.objects = {};
 
-			// Storing data for Cancel Event
-			this.$firstVal = this.$('#first').val().trim(); 
-			this.$lastVal = this.$('#last').val().trim();
-			this.$cityVal = this.$('#city').val().trim();
-			this.$stateVal = this.$('#state').val().trim();
-			this.$bioVal = this.$('#bio').val().trim();
+			var HOOK = this.dataSync.HOOK,
+				array = this.$el.find('[' + HOOK + ']'),
+				self = this;
+
+			$.each(array, function ( index, obj ) {
+
+				var key = $(obj).attr(HOOK); // Value of item's data attribute
+				
+				self.dataSync.objects[key] = $(this); // e.g. this.$first
+
+			});
+
+			console.log(this);
 			
 			return this;
 		
@@ -61,23 +67,20 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		newAttributes: function() {
 
 			// Return current user entered values
-			return {
+			var _newAttributes = {};
 
-				first: this.$first.val().trim(),
-				last: this.$last.val().trim(),
-				city: this.$city.val().trim(),
-				state: this.$state.val().trim(),
-				bio: this.$bio.val().trim()
-
-			}
+			$.each(this.dataSync.objects, function(key, value) {
+				_newAttributes[key] = this.val().trim();
+			});
+			
+			return _newAttributes;
 
 		},
 
 		packageObj: function ( event ) {
 
 			// Create package to send to server
-
-			// console.log('packaging new object...');
+			console.log('packaging new object...');
 
 			var self = this,
 				clientPackage = {},
@@ -88,9 +91,12 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			// Compare current values to latest checkout
 			$.each(newAttributes, function ( key, value ) {
 
-				if ( newAttributes[key] !== localBranch[key] ) {
+				var _newVal = newAttributes[key],
+					_copyVal = localBranch[key];
+
+				if ( _newVal !== _copyVal ) {
 					
-					clientPackage[key] = newAttributes[key]; // If values to match add them to the package
+					clientPackage[key] = _newVal; // If values to match add them to the package
 
 				}
 
@@ -100,21 +106,25 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
-		compareObj: function ( objFromClient ) {
+		compareObj: function ( modelFromClient ) {
 
-			console.log(objFromClient);
+			console.log('Obj from client: ', modelFromClient);
 
 			var self = this,
 				serverAttr = {},
 				passAttr = {};
 
-			$.each( objFromClient.passphrase, function ( key, value ) {
+			$.each( modelFromClient.passphrase, function ( key, value ) {
+
+				var clientVal = modelFromClient[key],
+					serverVal = self.modelOnServer[key],
+					passVal = modelFromClient.passphrase[key];
 
 				// Compare: If neither the value entered nor the value in the passphrase match the server...
-				if ( objFromClient[key] !== self.objOnServer[key] && objFromClient.passphrase[key] !== self.objOnServer[key] ) {
+				if ( clientVal !== serverVal && passVal !== serverVal ) {
 
-					serverAttr[key] = self.objOnServer[key]; // Add the server value to a new object
-					passAttr[key] = objFromClient.passphrase[key]; // Add the passphrase value to a new object
+					serverAttr[key] = serverVal; // Add the server value to a new object
+					passAttr[key] = passVal; // Add the passphrase value to a new object
 
 				}
 
@@ -125,13 +135,13 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				console.log("doesn't match server copy");
 
-				this.serverResponse(false, serverAttr);
+				this.serverResponse("error", serverAttr);
 
 			} else {
 
 				console.log("matches server copy");
 
-				this.serverResponse(true);
+				this.serverResponse("success");
 
 			}
 
@@ -139,32 +149,34 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		serverResponse: function ( response, serverAttr ) {
 
-			console.log('ServerAttr: ', serverAttr);
-
-			if ( response === false ) {
+			if ( response === "error" ) {
 
 				// Failed submission
 
-				var localCopy = $.parseJSON( localStorage.getItem('local-branch') ),
-					objOnServer = this.objOnServer,
+				var self = this,
+					localCopy = $.parseJSON( localStorage.getItem('local-branch') ),
+					modelOnServer = this.modelOnServer,
 					newAttributes = this.newAttributes();
 
 				$.each(serverAttr, function ( key, value ) {
 
-					var valueOnServer = serverAttr[ key ],
-						valueOnLocal = localCopy[ key ],
-						valueEntered = newAttributes[ key ],
-						selector = $('#' + key);
+					var serverVal = value,
+						passVal = localCopy[key],
+						clientVal = newAttributes[key],
+						selector = self.dataSync.objects[key];
+
+						console.log(selector);
 					
-					if ( value !== valueOnLocal && value !== valueEntered ) {
+					if ( serverVal !== passVal && serverVal !== clientVal ) {
 
-						console.log('mismatch: ', 'server: ', value, ' local: ', valueOnLocal, ' entered: ', valueEntered );
+						// Error Message - Client to resolve conflicts
+						console.log('mismatch: ', 'server: ', serverVal, ' local: ', passVal, ' entered: ', clientVal );
 
-						objOnServer[key] = value;
+						self.hasConflicts();
 
-						selector.addClass('error').after('<span class="error-label mine" data-value="' + valueOnServer + '">Theirs: ' + valueOnServer + '</span>').after('<span class="error-label mine" data-value="' + valueEntered + '">Mine: ' + valueEntered + '</span>');
-						$('div.error').show();
-						$('.save').attr('disabled', 'disabled').text('Submit');
+						modelOnServer[key] = serverVal;
+
+						selector.addClass('error').after('<span class="error-label mine" data-value="' + serverVal + '">Theirs: ' + serverVal + '</span>').after('<span class="error-label mine" data-value="' + clientVal + '">Mine: ' + clientVal + '</span>');
 					
 					}
 
@@ -172,8 +184,8 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				this.$el.find('input, textarea').attr('disabled', 'disabled');
 
-				this.storeLocalCopy( objOnServer );
-				this.objOnServer = objOnServer;
+				this.storeLocalCopy( modelOnServer );
+				this.modelOnServer = modelOnServer;
 				localStorage.setItem('previous-branch', JSON.stringify( localCopy ) )
 
 			} else {
@@ -198,8 +210,8 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				}
 
-				this.objOnServer = this.newAttributes();
-				this.storeLocalCopy( this.objOnServer );
+				this.modelOnServer = this.newAttributes();
+				this.storeLocalCopy( this.modelOnServer );
 
 				this.$el.find('input, textarea').removeAttr('disabled');
 
@@ -247,11 +259,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			} else {
 
-				this.$('#first').val(this.$firstVal); // Storing data for Cancel Event
-				this.$('#last').val(this.$lastVal); // Storing data for Cancel Event
-				this.$('#city').val(this.$cityVal); // Storing data for Cancel Event
-				this.$('#state').val(this.$stateVal); // Storing data for Cancel Event
-				this.$('#bio').val(this.$bioVal); // Storing data for Cancel Event
+				this.restoreDefaults();
 
 			}
 
@@ -282,9 +290,23 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		removeErrors: function () {
 
 			this.$el.find('input.error, textarea.erorr').removeClass('error');
-			$('div.error, div.success').hide();
 			this.$el.find('.error-label').remove();
 			$('input, textarea').removeAttr('disabled');
+
+			this.removeMessages();
+
+		},
+
+		removeMessages: function () {
+
+			$('div.error, div.success').hide();
+
+		},
+
+		hasConflicts: function () {
+
+			$('div.error').show();
+			$('.save').attr('disabled', 'disabled').text('Submit');
 
 		},
 
@@ -302,11 +324,15 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		restoreDefaults: function () {
 
-			this.$first.val(this.$firstVal);
-			this.$last.val(this.$lastVal);
-			this.$city.val(this.$cityVal);
-			this.$state.val(this.$stateVal);
-			this.$bio.val(this.$bioVal);
+			var self = this;
+
+			$.each(this.dataSync.objects, function (key, obj) {
+
+				console.log(self.model.get(key));
+
+				obj.val(self.model.get(key));
+
+			});
 
 		},
 		
@@ -321,7 +347,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		
 		},
 
-		objOnServer: {
+		modelOnServer: {
 			first: 'Steve',
 			last: 'Evans',
 			city: 'Los Angeles',
