@@ -9,9 +9,9 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		
 		initialize: function () {
 
-			this.model.on( 'change', this.render, this );
+			// this.model.on( 'change', this.render, this );
 
-			this.storeLocalCopy( this.model );
+			// this.storeLocalCopy( this.model );
 		
 		},
 
@@ -19,9 +19,9 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			// Create a local branch of the latest checkout to keep in LocalStorage
 
-			var latestCheckout = JSON.stringify( latestCheckout );
+			// var latestCheckout = JSON.stringify( latestCheckout );
 
-			localStorage.setItem( 'local-branch', latestCheckout );
+			// localStorage.setItem( 'local-branch', latestCheckout );
 
 		},
 
@@ -84,7 +84,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			var self = this,
 				clientPackage = {},
-				localBranch = $.parseJSON( localStorage.getItem('local-branch') ),
+				localBranch = this.model.toJSON(),
 				newAttributes = this.newAttributes();
 				clientPackage.passphrase = localBranch; // Put copy of local branch in package
 
@@ -154,8 +154,8 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 				// Failed submission
 
 				var self = this,
-					localCopy = $.parseJSON( localStorage.getItem('local-branch') ),
-					modelOnServer = this.modelOnServer,
+					localCopy = this.model.toJSON(),
+					modelOnServer = this.model.clone().toJSON(),
 					newAttributes = this.newAttributes();
 
 				$.each(serverAttr, function ( key, value ) {
@@ -164,8 +164,6 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 						passVal = localCopy[key],
 						clientVal = newAttributes[key],
 						selector = self.dataSync.objects[key];
-
-						console.log(selector);
 					
 					if ( serverVal !== passVal && serverVal !== clientVal ) {
 
@@ -184,9 +182,8 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				this.$el.find('input, textarea').attr('disabled', 'disabled');
 
-				this.storeLocalCopy( modelOnServer );
-				this.modelOnServer = modelOnServer;
-				localStorage.setItem('previous-branch', JSON.stringify( localCopy ) )
+				this.model.set(modelOnServer);
+				this.model._previousAttributes = localCopy;
 
 			} else {
 
@@ -197,6 +194,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 				if ( !_.isEqual(this.model, this.newAttributes() ) ) {
 
 					this.model.set( this.newAttributes() );
+					this.render();
 
 				} else {
 
@@ -204,9 +202,9 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				}
 
-				if ( localStorage.getItem('previous-branch') ) {
+				if ( this.model.toJSON !== this.model._previousAttributes ) {
 
-					localStorage.removeItem('previous-branch');
+					this.model.toJSON = this.model._previousAttributes;
 
 				}
 
@@ -250,12 +248,13 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		cancel: function () {
 
-			var previousBranch = localStorage.getItem('previous-branch');
-			
-			if ( typeof previousBranch === 'string' ) {
+			var previousBranch = this.model._previousAttributes;
 
-				localStorage.setItem('local-branch', previousBranch );
-				localStorage.removeItem('previous-branch');
+			console.log(previousBranch, this.model.toJSON());
+			
+			if ( !_.isEqual( previousBranch, this.model.toJSON() ) ) {
+
+				this.model.set(previousBranch);
 
 			} else {
 
