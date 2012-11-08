@@ -1,4 +1,11 @@
-define(['jquery', 'underscore', 'backbone', 'handlebars', 'widgets/textinput', 'text!templates/profileTemplate.html'],
+define([
+	'jquery'
+	, 'underscore'
+	, 'backbone'
+	, 'handlebars'
+	, 'widgets/textinput'
+	, 'text!templates/profileTemplate.html'
+],
 function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 	'use strict';
@@ -9,19 +16,17 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		
 		initialize: function () {
 
-			// this.model.on( 'change', this.render, this );
-
-			// this.storeLocalCopy( this.model );
+			this.model.on( 'change', this.render, this );
 		
 		},
 
-		storeLocalCopy: function ( latestCheckout ) {
+		initDataSync: function () {
 
-			// Create a local branch of the latest checkout to keep in LocalStorage
-
-			// var latestCheckout = JSON.stringify( latestCheckout );
-
-			// localStorage.setItem( 'local-branch', latestCheckout );
+			// Construct dataSync Object
+			this.dataSync = {};
+			this.dataSync.HOOK = 'data-sync'; // ENTER YOUR CUSTOM DATA ATTRIBUTE
+			this.dataSync.serverModel = this.model.toJSON(); // Cache the latest model from the server
+			this.dataSync.objects = {}; // Used to store array of objects in view using dataSync
 
 		},
 
@@ -29,8 +34,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			'click .save': 'packageObj',
 			'click .cancel': 'cancel',
-			'click .mine': 'takeMine',
-			'click .theirs': 'takeTheirs'
+			'click .accept': 'accept'
 
 		},
 		
@@ -41,24 +45,23 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			// Render
 			this.$el.html( this.template( this.model.toJSON() ) );
 
-			// Construct dataSync Object
-			this.dataSync = {};
-			this.dataSync.HOOK = 'data-sync'; // ENTER YOUR CUSTOM DATA ATTRIBUTE
-			this.dataSync.objects = {};
+			// Init dataSync
+			this.initDataSync();
 
-			var HOOK = this.dataSync.HOOK,
-				array = this.$el.find('[' + HOOK + ']'),
-				self = this;
+			// Construct your dataSync object array
+			var self = this,
+				HOOK = this.dataSync.HOOK,
+				array = this.$el.find('[' + HOOK + ']');
 
 			$.each(array, function ( index, obj ) {
 
 				var key = $(obj).attr(HOOK); // Value of item's data attribute
 				
-				self.dataSync.objects[key] = $(this); // e.g. this.$first
+				self.dataSync.objects[key] = $(this); // Cache jQuery wrapped reference of object
 
 			});
 
-			console.log(this);
+			console.log('Your view: ', this);
 			
 			return this;
 		
@@ -69,7 +72,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			// Return current user entered values
 			var _newAttributes = {};
 
-			$.each(this.dataSync.objects, function(key, value) {
+			$.each(this.dataSync.objects, function (key, value) {
 				_newAttributes[key] = this.val().trim();
 			});
 			
@@ -84,19 +87,19 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			var self = this,
 				clientPackage = {},
-				localBranch = this.model.toJSON(),
+				serverModel = this.dataSync.serverModel, // local ref to latest checkout of model
 				newAttributes = this.newAttributes();
-				clientPackage.passphrase = localBranch; // Put copy of local branch in package
+				clientPackage.passphrase = serverModel; // Put copy of local branch in package
 
-			// Compare current values to latest checkout
+			// Compare submitted values to latest checkout
 			$.each(newAttributes, function ( key, value ) {
 
-				var _newVal = newAttributes[key],
-					_copyVal = localBranch[key];
+				var newVal = newAttributes[key],
+					branchVal = serverModel[key];
 
-				if ( _newVal !== _copyVal ) {
+				if ( newVal !== branchVal ) {
 					
-					clientPackage[key] = _newVal; // If values to match add them to the package
+					clientPackage[key] = newVal; // If values don't match, add them to the package
 
 				}
 
@@ -106,21 +109,33 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
-		compareObj: function ( modelFromClient ) {
+		compareObj: function ( clientPackage ) {
 
-			console.log('Obj from client: ', modelFromClient);
+			// TODO: This function needs to happen on the server
+
+			console.log('Obj from client: ', clientPackage);
+
+			// Faking model in database
+			var serverModel = {
+				first: 'Steve',
+				last: 'Evans',
+				city: 'Los Angeles',
+				state: 'California',
+				bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.'
+			}
 
 			var self = this,
 				serverAttr = {},
 				passAttr = {};
 
-			$.each( modelFromClient.passphrase, function ( key, value ) {
+			$.each( clientPackage.passphrase, function ( key, value ) {
 
-				var clientVal = modelFromClient[key],
-					serverVal = self.modelOnServer[key],
-					passVal = modelFromClient.passphrase[key];
+				var clientVal = clientPackage[key],
+					serverVal = serverModel[key], // TODO: Use real model on server
+					passVal = clientPackage.passphrase[key];
 
-				// Compare: If neither the value entered nor the value in the passphrase match the server...
+				// Compare: If neither the value entered nor the value in the
+				// passphrase match the server...
 				if ( clientVal !== serverVal && passVal !== serverVal ) {
 
 					serverAttr[key] = serverVal; // Add the server value to a new object
@@ -130,7 +145,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			});
 
-			// Compare the two new objects (server values and new passphrase)
+			// Compare the two new objects (server values and new passphrase values)
 			if ( !_.isEqual( passAttr, serverAttr ) ) {
 
 				console.log("doesn't match server copy");
@@ -149,93 +164,53 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		serverResponse: function ( response, serverAttr ) {
 
-			if ( response === "error" ) {
+			console.log('Server differences: ', serverAttr);
+
+			if ( response === "success" ) {
+
+				// Successful submission
+
+				this.model.set( this.newAttributes() );
+
+			} else {
 
 				// Failed submission
 
 				var self = this,
-					localCopy = this.model.toJSON(),
-					modelOnServer = this.model.clone().toJSON(),
+					model = this.model.toJSON(),
+					serverModel = this.dataSync.serverModel,
 					newAttributes = this.newAttributes();
 
 				$.each(serverAttr, function ( key, value ) {
 
 					var serverVal = value,
-						passVal = localCopy[key],
+						passVal = model[key],
 						clientVal = newAttributes[key],
 						selector = self.dataSync.objects[key];
 					
 					if ( serverVal !== passVal && serverVal !== clientVal ) {
 
 						// Error Message - Client to resolve conflicts
-						console.log('mismatch: ', 'server: ', serverVal, ' local: ', passVal, ' entered: ', clientVal );
+						console.log('mismatch: ', 'server: ', serverVal, ' checkout: ', passVal, ' entered: ', clientVal );
 
-						self.hasConflicts();
+						serverModel[key] = serverVal;
 
-						modelOnServer[key] = serverVal;
-
-						selector.addClass('error').after('<span class="error-label mine" data-value="' + serverVal + '">Theirs: ' + serverVal + '</span>').after('<span class="error-label mine" data-value="' + clientVal + '">Mine: ' + clientVal + '</span>');
+						selector.addClass('error').after('<span class="error-label accept" data-sync-value="' + serverVal + '" title="Click to Accept">Theirs: ' + serverVal + '</span>').after('<span class="error-label accept" data-sync-value="' + clientVal + '" title="Click to Accept">Mine: ' + clientVal + '</span>');
 					
 					}
 
 				});
 
-				this.$el.find('input, textarea').attr('disabled', 'disabled');
-
-				this.model.set(modelOnServer);
-				this.model._previousAttributes = localCopy;
-
-			} else {
-
-				// Successful submission
-
-				this.removeErrors();
-
-				if ( !_.isEqual(this.model, this.newAttributes() ) ) {
-
-					this.model.set( this.newAttributes() );
-					this.render();
-
-				} else {
-
-					this.render();
-
-				}
-
-				if ( this.model.toJSON !== this.model._previousAttributes ) {
-
-					this.model.toJSON = this.model._previousAttributes;
-
-				}
-
-				this.modelOnServer = this.newAttributes();
-				this.storeLocalCopy( this.modelOnServer );
-
-				this.$el.find('input, textarea').removeAttr('disabled');
+				this.hasConflicts();
 
 			}
 
 		},
 
-		takeMine: function ( event ) {
+		accept: function ( event ) {
 
-			var $target = $(event.currentTarget);
-
-			var value = $target.attr('data-value');
-
-			$target.siblings('input, textarea').val(value).removeClass('error');
-			$target.siblings('.error-label').remove();
-			$target.remove();
-
-			this.checkErrors();
-
-		},
-
-		takeTheirs: function ( event ) {
-
-			var $target = $(event.currentTarget);
-
-			var value = $target.attr('data-value');
+			var $target = $(event.currentTarget),
+				value = $target.attr('data-sync-value');
 
 			$target.siblings('input, textarea').val(value).removeClass('error');
 			$target.siblings('.error-label').remove();
@@ -244,17 +219,12 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			this.checkErrors();
 
 		},
-
 
 		cancel: function () {
-
-			var previousBranch = this.model._previousAttributes;
-
-			console.log(previousBranch, this.model.toJSON());
 			
-			if ( !_.isEqual( previousBranch, this.model.toJSON() ) ) {
+			if ( !_.isEqual( this.dataSync.serverModel, this.model.toJSON() ) ) {
 
-				this.model.set(previousBranch);
+				this.dataSync.serverModel = this.model.toJSON();
 
 			} else {
 
@@ -264,8 +234,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			$('.save').attr('disabled', 'disabled').text('Save');
 
-			this.removeErrors();
-			this.enableSubmit();
+			this.clearWarnings();
 
 			return false;
 
@@ -277,35 +246,25 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			if ( numErrors < 1 ) {
 
-				$('div.error').hide();
-				$('.success').show();
-
-				this.enableSubmit();
+				this.readyForSubmit();
 
 			}
 
 		},
 
-		removeErrors: function () {
-
-			this.$el.find('input.error, textarea.erorr').removeClass('error');
-			this.$el.find('.error-label').remove();
-			$('input, textarea').removeAttr('disabled');
-
-			this.removeMessages();
-
-		},
-
-		removeMessages: function () {
-
-			$('div.error, div.success').hide();
-
-		},
-
 		hasConflicts: function () {
 
-			$('div.error').show();
-			$('.save').attr('disabled', 'disabled').text('Submit');
+			this.$el.find('input, textarea, .save').attr('disabled', 'disabled'); // Disable input fields
+			$('.save').text('Submit'); // Switch "Save" to "Submit"
+			$('div.error').show(); // Show error message
+
+		},
+
+		readyForSubmit: function () {
+
+			$('div.error').hide();
+			$('.success').show();
+			this.enableSubmit();
 
 		},
 
@@ -321,13 +280,19 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		},
 
+		clearWarnings: function () {
+
+			this.$el.find('input, textarea, .save').removeAttr('disabled').removeClass('error'); // Restore input fields
+			this.$el.find('.error-label').remove(); // Remove error lables from DOM
+			$('div.error, div.success').hide(); // Hide any error or success messages
+
+		},
+
 		restoreDefaults: function () {
 
 			var self = this;
 
 			$.each(this.dataSync.objects, function (key, obj) {
-
-				console.log(self.model.get(key));
 
 				obj.val(self.model.get(key));
 
@@ -344,14 +309,6 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			this.$el = null;
 			this.el = null;
 		
-		},
-
-		modelOnServer: {
-			first: 'Steve',
-			last: 'Evans',
-			city: 'Los Angeles',
-			state: 'California',
-			bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.'
 		},
 		
 	});
