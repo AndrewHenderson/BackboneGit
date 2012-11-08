@@ -40,7 +40,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		
 		render: function () {
 
-			console.log('render...');
+			console.log('Render: ', this);
 		
 			// Render
 			this.$el.html( this.template( this.model.toJSON() ) );
@@ -60,8 +60,6 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 				self.dataSync.objects[key] = $(this); // Cache jQuery wrapped reference of object
 
 			});
-
-			console.log('Your view: ', this);
 			
 			return this;
 		
@@ -83,7 +81,6 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		packageObj: function ( event ) {
 
 			// Create package to send to server
-			console.log('packaging new object...');
 
 			var self = this,
 				clientPackage = {},
@@ -113,7 +110,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 			// TODO: This function needs to happen on the server
 
-			console.log('Obj from client: ', clientPackage);
+			console.log('Client package: ', clientPackage);
 
 			// Faking model in database
 			var serverModel = {
@@ -148,13 +145,9 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			// Compare the two new objects (server values and new passphrase values)
 			if ( !_.isEqual( passAttr, serverAttr ) ) {
 
-				console.log("doesn't match server copy");
-
 				this.serverResponse("error", serverAttr);
 
 			} else {
-
-				console.log("matches server copy");
 
 				this.serverResponse("success");
 
@@ -164,9 +157,9 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		serverResponse: function ( response, serverAttr ) {
 
-			console.log('Server differences: ', serverAttr);
-
 			if ( response === "success" ) {
+
+				console.log("Success!");
 
 				// Successful submission
 
@@ -175,6 +168,8 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			} else {
 
 				// Failed submission
+
+				console.log('Error mismatch: ', JSON.stringify( serverAttr ) );
 
 				var self = this,
 					model = this.model.toJSON(),
@@ -191,7 +186,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 					if ( serverVal !== passVal && serverVal !== clientVal ) {
 
 						// Error Message - Client to resolve conflicts
-						console.log('mismatch: ', 'server: ', serverVal, ' checkout: ', passVal, ' entered: ', clientVal );
+						console.log('Server: ', serverVal, ' Checkout: ', passVal, ' Entered: ', clientVal );
 
 						serverModel[key] = serverVal;
 
