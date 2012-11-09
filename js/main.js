@@ -6,6 +6,7 @@ require({
 		, 'underscore': 'vendor/underscore/underscore_amd'
 		, 'backbone': 'vendor/backbone/backbone_amd'
 		, 'localStorage': 'vendor/backbone/backbone.localStorage'
+		, 'backboneGit': 'vendor/backbone/backbone.git'
 		, 'text': 'vendor/require/text'
 		, 'handlebars': 'vendor/handlebars/handlebars'
 		, 'models': 'models'

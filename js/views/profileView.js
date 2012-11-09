@@ -163,13 +163,21 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 				// Successful submission
 
-				this.model.set( this.newAttributes() );
+				if ( !_.isEqual( this.model.toJSON(), this.newAttributes() ) ) {
+
+					this.model.set( this.newAttributes() );
+
+				} else {
+
+					this.clearWarnings();
+
+				}
 
 			} else {
 
 				// Failed submission
 
-				console.log('Error mismatch: ', JSON.stringify( serverAttr ) );
+				console.log('Error mismatch: ', serverAttr );
 
 				var self = this,
 					model = this.model.toJSON(),
@@ -257,8 +265,8 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 		readyForSubmit: function () {
 
-			$('div.error').hide();
-			$('.success').show();
+			$('.message.error').hide();
+			$('.message.success').show();
 			this.enableSubmit();
 
 		},
@@ -280,6 +288,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			this.$el.find('input, textarea, .save').removeAttr('disabled').removeClass('error'); // Restore input fields
 			this.$el.find('.error-label').remove(); // Remove error lables from DOM
 			$('div.error, div.success').hide(); // Hide any error or success messages
+			$('.save').text('Save');
 
 		},
 
@@ -304,7 +313,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 			this.$el = null;
 			this.el = null;
 		
-		},
+		}
 		
 	});
 

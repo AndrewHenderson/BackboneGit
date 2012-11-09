@@ -2,6 +2,7 @@ define([
 	  'backbone'
 	, 'namespace'
 	, 'router'
+	, 'backboneGit'
 ],
 function ( Backbone, Namespace, Router ) {
 
