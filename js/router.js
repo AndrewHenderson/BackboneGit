@@ -5,11 +5,13 @@ define([
 	, 'backbone'
 	, 'models/profileModel'
 	, 'views/profileView'
+	, 'models/inputModel'
+	, 'views/inputView'
 	, 'views/aboutView'
 	, 'text!templates/homeTemplate.html'
 	, 'widgets/listview'
 ],
-function ( $, $mobile, _, Backbone, ProfileModel, ProfileView, AboutView, HomeTemplate, ListView ) {
+function ( $, $mobile, _, Backbone, ProfileModel, ProfileView, InputModel, InputView, AboutView, HomeTemplate, ListView ) {
 
 	_.extend(App.Dispatcher, Backbone.Events);
 
@@ -22,10 +24,8 @@ function ( $, $mobile, _, Backbone, ProfileModel, ProfileView, AboutView, HomeTe
 		},
 
 		routes: {
-			 '': 'contact',
-			 'home/': 'contact',
+			 '': 'showHome',
 			 'about/': 'about',
-			 'contact/': 'contact',
 			 '*actions': 'defaultAction' // default action,mapping "/#anything"       	
         },
 
@@ -37,22 +37,6 @@ function ( $, $mobile, _, Backbone, ProfileModel, ProfileView, AboutView, HomeTe
 
 	    showHome: function () {
 
-	    	/*var div = document.createElement('div');
-	    	var html = $(div).html(HomeTemplate);
-
-			this.prepPage({
-				render: function () {
-					return this;
-				},
-				el: html[0]
-			});*/
-
-			// $('#main-page').append(HomeTemplate);
-
-	    },
-
-		contact: function () {
-
 			var model = new ProfileModel();
 
 			var view = new ProfileView({
@@ -61,7 +45,15 @@ function ( $, $mobile, _, Backbone, ProfileModel, ProfileView, AboutView, HomeTe
 
 			});
 
-			this.prepPage(view);	
+			var model2 = new InputModel();
+
+			var view2 = new InputView({
+
+				model: model2
+
+			});
+
+			$('#main-page').append( view.render().el, view2.render().el );
 
 		},
 

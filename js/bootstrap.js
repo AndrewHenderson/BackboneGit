@@ -2,7 +2,7 @@ define([
 	  'backbone'
 	, 'namespace'
 	, 'router'
-	, 'backboneGit'
+	, 'backboneSync'
 ],
 function ( Backbone, Namespace, Router ) {
 
