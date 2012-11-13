@@ -52,7 +52,7 @@ body {
     background: white;
     background: -webkit-linear-gradient( #F9F9F9, #EEE );
 }
-#main-page header, #main-page footer {   
+header, footer {   
     display: block;   
     z-index: 9999;   
     background: #111;
@@ -60,7 +60,7 @@ body {
     height: 44px;   
     width: 100%;     
 }
-#main-page header h1, #main-page footer h4 {   
+header h1, footer h4 {   
     text-align: center;     
     padding-right: 40px;   
     color: white;   
@@ -105,8 +105,8 @@ body {
 
 .ui-page-active[data-role="nav"] { z-index: 9; }
 .ui-page-active[data-role="page"] { z-index: 999; }
-
-input, textarea { float:left; width: 50%; }
+input { height:32px !important; }
+input, textarea { float:left; width: 60%; box-sizing: border-box; }
 
 /*input, textarea { background-color:#f9f9f9; border: 1px solid #aaa; border-radius:9px;
 	box-shadow: inset 0px 1px 4px rgba(0, 0, 0, .2); box-sizing: border-box;
@@ -126,8 +126,14 @@ input[disabled="disabled"], textarea[disabled="disabled"] {
 input:invalid, textarea:invalid {
 	background: #F0DDDD;
 }
-input.sync-error, textarea.sync-erorr {
+input.sync-warning, textarea.sync-warning {
+	border:1px solid orange;
+}
+input.sync-error, textarea.sync-erorr, input.sycn-warning.sync-error, textarea.sync-warning.sync-error {
 	border: 1px solid red;
+}
+input.sync-success, textarea.sync-success {
+	border: 1px solid green;
 }
 input.sync-error:focused, textarea.sync-error:focused {
 	background: white;
@@ -138,14 +144,15 @@ input.sync-error:focused, textarea.sync-error:focused {
 }
 .sync-message {
 	display: none;
-	padding: 0px 0 15px;
+	box-sizing: border-box;
+	width: 60%;
 }
-.sync-message.sync-error {
+/*.sync-message.sync-error {
 	color: red;
 }
 .sync-message.sync-success {
 	color: green;
-}
+}*/
 .sync-label {
 	float: left;
 	color: red;

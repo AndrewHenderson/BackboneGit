@@ -1,6 +1,3 @@
-<header data-role="header">
-	<h1>Home</h1>
-</header><!-- /header -->
 <div data-role="content" class="content">
 	<span class="response-label"></span>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
@@ -23,10 +20,16 @@
 		<label for="bio">Biography</label>
 		<textarea name="bio" id="bio" placeholder="Biography" rows="6" data-sync="bio">{{bio}}</textarea>
 	</div>
-	<div class="sync-message sync-error">*The highlighted fields have changed since you last checked them out of the database.
-		<br>Please resolve the conflicts above by selecting which version you would like to use.
-		<br>Once all conflicts are resolved, click Submit.</div>
-	<div class="sync-message sync-success">Conflicts resolved. Click "Submit" to commit your changed.</div>
+	<div class="sync-message sync-error alert alert-error">*The highlighted fields have changed since you last checked them out of the database.
+		<br>Please resolve the conflicts above by clicking which version you would like to use.
+		<br>Once all conflicts are resolved, click Submit.
+	</div>
+	<div class="sync-message sync-warning alert">*The highlighted fields have changed since you last checked them out of the database.
+		<br>Please confirm that you would still like to submit your changes by clicking "Submit" below.
+	</div>
+	<div class="sync-message sync-success">
+		Conflicts resolved. Click "Submit" to commit your changed.
+	</div>
 	<button class="btn sync-cancel">Cancel</button>
 	<button class="btn btn-primary sync-save">Save</button>
 </div><!-- /content -->
