@@ -108,32 +108,23 @@ header h1, footer h4 {
 input { height:32px !important; }
 input, textarea { float:left; width: 60%; box-sizing: border-box; }
 
-/*input, textarea { background-color:#f9f9f9; border: 1px solid #aaa; border-radius:9px;
-	box-shadow: inset 0px 1px 4px rgba(0, 0, 0, .2); box-sizing: border-box;
-	background-image: none; padding: .4em; margin: .5em 0; line-height: 1.4;
-	font-size: 16px; display: block; width: 40%; outline: 0; font-family: Helvetica, Arial, sans-serif;
-	float: left; }
-input.focused, textarea.focused {
-	background: white;
-	-moz-box-shadow: 0px 0px 12px #387bbe;
-	-webkit-box-shadow: 0px 0px 12px #387BBE;
-	box-shadow: 0px 0px 12px #387BBE;
-	outline: none;
-}
-input[disabled="disabled"], textarea[disabled="disabled"] {
-	background:#eee;
-}*/
 input:invalid, textarea:invalid {
 	background: #F0DDDD;
 }
 input.sync-warning, textarea.sync-warning {
-	border:1px solid orange;
+	border:1px solid #FBEED5;
+	background: #FCF8E3;
+	box-shadow: none;
 }
 input.sync-error, textarea.sync-erorr, input.sycn-warning.sync-error, textarea.sync-warning.sync-error {
-	border: 1px solid red;
+	border: 1px solid #EED3D7;
+	background: #F0DDDD;
+	box-shadow: none;
 }
 input.sync-success, textarea.sync-success {
-	border: 1px solid green;
+	border: 1px solid #D6E9C6;
+	background: #DFF0D8;
+	box-shadow: none;
 }
 input.sync-error:focused, textarea.sync-error:focused {
 	background: white;
@@ -142,33 +133,31 @@ input.sync-error:focused, textarea.sync-error:focused {
 	box-shadow: 0px 0px 12px red;
 	outline: none;
 }
+.alert {
+	margin-bottom: 10px;
+}
 .sync-message {
 	display: none;
 	box-sizing: border-box;
 	width: 60%;
 }
-/*.sync-message.sync-error {
-	color: red;
-}
-.sync-message.sync-success {
-	color: green;
-}*/
-.sync-label {
+.sync-accept {
 	float: left;
-	color: red;
-	border: 1px solid red;
-	background: white;
+	border: 1px solid #B94A48;
 	border-radius: 5px;
-	padding: 3px 5px;
-	font-weight: bold;
-	margin: 1px 0 0 10px;
+	padding: 4px 5px 5px;
+	margin: 0 0 0 10px;
 	cursor: pointer;
+	box-shadow: 0 1ox 1px rgba(0,0,0,0.2);
 }
-.sync-label.sync-success {
+.sync-accept:hover {
+	background-color: #f9eded;
+}
+.sync-accept.sync-success {
 	color: green;
 	border-color: green;
 }
-.sync-label.sync-error {
+.sync-accept.sync-error {
 	color: red;
 	border-color: red;
 }

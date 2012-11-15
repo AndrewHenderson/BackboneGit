@@ -2,7 +2,7 @@
 	<span class="response-label"></span>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="first">First Name</label>
-		<input type="text" name="first" id="first" value="{{first}}" placeholder="First Name" data-sync="first" />
+		<input type="text" name="first" id="first" value="{{first}}" placeholder="First Name" />
 	</div>
 	<div data-role="fieldcontain" class="ui-hide-label cf">
 		<label for="last">Last Name</label>
@@ -20,15 +20,16 @@
 		<label for="bio">Biography</label>
 		<textarea name="bio" id="bio" placeholder="Biography" rows="6" data-sync="bio">{{bio}}</textarea>
 	</div>
-	<div class="sync-message sync-error alert alert-error">*The highlighted fields have changed since you last checked them out of the database.
-		<br>Please resolve the conflicts above by clicking which version you would like to use.
-		<br>Once all conflicts are resolved, click Submit.
+	<div class="sync-message sync-error alert alert-error">*You are attempting to modify fields that have changed since you checked out this record.
+		<br><strong>If you would still like to save your changes:</strong>
+		<br>1) Please resolve the conflicts by selecting which version you would like to save. Do so by clicking the label to the right of the field.
+		<br>2) Once all conflicts are resolved, click the "Submit" button below.
 	</div>
-	<div class="sync-message sync-warning alert">*The highlighted fields have changed since you last checked them out of the database.
-		<br>Please confirm that you would still like to submit your changes by clicking "Submit" below.
+	<div class="sync-message sync-warning alert">*The highlighted fields have changed since you checked out this record.
+		<br>While these are not in conflict, you may want to review them before saving your changes.
 	</div>
 	<div class="sync-message sync-success alert alert-success">
-		Conflicts resolved. Click "Submit" to commit your changed.
+		Conflicts resolved. Click "Submit" to save your changes.
 	</div>
 	<button class="btn sync-cancel">Cancel</button>
 	<button class="btn btn-primary sync-save">Save</button>

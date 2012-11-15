@@ -10,7 +10,7 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 
 	'use strict';
 
-	App.ProfileView = Backbone.Sync.View.extend({
+	App.ProfileView = Backbone.View.extend({
 	
 		template: Handlebars.compile( ProfileTemplate ),
 		
@@ -20,21 +20,17 @@ function ( $, _, Backbone, Handlebars, TextInput, ProfileTemplate ) {
 		
 		},
 
-		events: {
+		render: function () {
 
-	    },
+			// Render
+			this.$el.html( this.template( this.model.toJSON() ) );
 
-	    render: function () {
+			// Sync Init
+			this.syncInit();
 
-	    	// Render
-       		this.$el.html( this.template( this.model.toJSON() ) );
+			return this;
 
-       		// Sync Init
-       		this.sync();
-
-	    	return this;
-
-	    },
+		},
 		
 		close: function () {
 		

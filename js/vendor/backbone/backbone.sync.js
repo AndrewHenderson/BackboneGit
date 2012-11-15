@@ -19,38 +19,34 @@
 	} 
 }(this, function ($, _, Backbone) {
 
-	Backbone.Sync = (function(Backbone, _, $){
-	
-	var Sync = {};
+	Backbone = (function(Backbone, _, $){
 
-	// Sync.View
-	// ---------------
-	Sync.View = Backbone.View.extend({
+		Backbone.View = Backbone.View.extend({
 
-		sync: function () {
+		syncInit: function () {
 
 			console.log('Sync Init', this);
 
 			// Construct dataSync Object
-			this.dataSync = {};
-			this.dataSync.HOOK = 'data-sync'; // ENTER YOUR CUSTOM DATA ATTRIBUTE
-			this.dataSync.checkout = this.model.toJSON(); // Cache the latest model from the server
-			this.dataSync.objects = {}; // Used to store array of objects in view using dataSync
+			this.sync = {};
+			this.sync.hook = 'data-sync'; // ENTER YOUR CUSTOM DATA ATTRIBUTE
+			this.sync.checkout = this.model.toJSON(); // Cache the latest model from the server
+			this.sync.elements = {}; // Used to store array of objects in view using dataSync
 
 			// Construct your dataSync object array
 			var self = this,
-				HOOK = this.dataSync.HOOK,
-				array = this.$el.find('[' + HOOK + ']');
+				hook = this.sync.hook,
+				array = this.$el.find('[' + hook + ']');
 
-			$.each(array, function ( index, obj ) {
+			$.each(array, function ( index, el ) {
 
-				var key = $(obj).attr(HOOK); // Value of item's data attribute
+				var key = $(el).attr(hook); // Value of item's data attribute
 				
-				self.dataSync.objects[key] = $(this); // Cache jQuery wrapped reference of object
+				self.sync.elements[key] = $(this); // Cache jQuery wrapped reference of object
 
 			});
 
-			// Cache this views elements
+			// Cache this view's *Sync* elements
 			var self = this;
 			this.$save = this.$el.find('.sync-save');
 			this.$error = this.$el.find('.sync-error');
@@ -67,7 +63,7 @@
 			// Return current user entered values
 			var _syncAttributes = {};
 
-			$.each(this.dataSync.objects, function (key, value) {
+			$.each(this.sync.elements, function (key, value) {
 				_syncAttributes[key] = this.val().trim();
 			});
 			
@@ -85,12 +81,9 @@
 				// Create package to send to server
 				var self = this,
 					clientPackage = {},
-					checkout = this.dataSync.checkout, // local ref to latest checkout of model
+					checkout = this.sync.checkout, // local ref to latest checkout of model
 					newAttributes = this.syncAttributes();
 				clientPackage.timestamp = checkout.timestamp; // Put checkout timestamp in package
-
-				console.log('Checkout: ', checkout);
-
 
 				// Compare submitted values to latest checkout
 				$.each(newAttributes, function ( key, value ) {
@@ -99,8 +92,6 @@
 						checkoutVal = checkout[key];
 
 					if ( newVal !== checkoutVal ) {
-
-						console.log('New: ', newVal, 'Checkout: ', checkoutVal);
 						
 						clientPackage[key] = newVal; // If values don't match, add them to the package
 
@@ -161,18 +152,18 @@
 				console.log("Success!");
 				// Successful submission
 				this.model.set( serverModel );
-				this.dataSync.checkout = serverModel;
+				this.sync.checkout = serverModel;
 
 			} else {
 
-				console.log('Error timestamp: ', serverModel );
+				console.log('Conflict - Server: ', serverModel.timestamp, ', Submitted: ', this.model.toJSON().timestamp );
 
 				// Failed submission
 				var self = this,
 					model = this.model.toJSON(),
 					newAttributes = this.syncAttributes();
-					this.dataSync.checkout = serverModel;
-					this.dataSync.pendingAttributes = this.syncAttributes();
+					this.sync.checkout = serverModel;
+					this.sync.pendingAttributes = this.syncAttributes();
 
 				var clientData = {},
 					serverData = {};
@@ -182,38 +173,35 @@
 					var serverVal = value,
 						origVal = model[key],
 						newVal = newAttributes[key],
-						selector = self.dataSync.objects[key];
+						selector = self.sync.elements[key];
 
-					if ( origVal !== newVal && origVal !== serverVal && newVal !== serverVal ) {
+					if ( typeof newVal !== 'undefined' ) {
 
-						// Error: Client to resolve conflicts
-						console.log('Error - Server: ', serverVal, ' Checkout: ', origVal, ' Entered: ', newVal );
+						if ( origVal !== newVal && origVal !== serverVal && newVal !== serverVal ) {
 
-						selector.addClass('sync-error').after('<span class="sync-label sync-accept" data-sync-value="' + serverVal + '" title="Click to Accept">Theirs: ' + serverVal + '</span>').after('<span class="sync-label sync-accept" data-sync-value="' + newVal + '" title="Click to Accept">Mine: ' + newVal + '</span>');
-					
-						clientData[key] = newVal;
-						serverData[key] = serverVal;
+							// Error: Client to resolve conflicts
+							console.log('Conflict - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
 
-						self.syncConflict();
+							selector.addClass('sync-error').after('<span class="sync-accept alert alert-error" data-sync-for="' + key + '" data-sync-value="' + serverVal + '" title="Click to Accept">Theirs: ' + serverVal + '</span>').after('<span class="sync-accept alert alert-error" data-sync-for="' + key + '" data-sync-value="' + newVal + '" title="Click to Accept">Mine: ' + newVal + '</span>');
+						
+							clientData[key] = newVal;
+							serverData[key] = serverVal;
 
-					} else if ( origVal !== serverVal && newVal !== serverVal ) {
+							self.syncConflict();
 
-						console.log('Warning - Server: ', serverVal, ' Checkout: ', origVal, ' Entered: ', newVal );
+						} else if ( origVal !== serverVal && newVal !== serverVal ) {
 
-						// Warning: Client must accept updates to commit.
-						selector.val(serverVal).addClass('sync-warning');
+							console.log('Warning - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
 
-						clientData[key] = newVal;
-						serverData[key] = serverVal;
+							// Warning: Client must accept updates to commit.
+							selector.val(serverVal).addClass('sync-warning');
 
-						self.syncWarning();
+							clientData[key] = newVal;
+							serverData[key] = serverVal;
 
-					} else if ( origVal === serverVal && newVal !== serverVal ) {
+							self.syncWarning();
 
-						console.log('Success - Server: ', serverVal, ' Checkout: ', origVal, ' Entered: ', newVal );
-
-						// Success
-						selector.addClass('sync-success');
+						}
 
 					}
 
@@ -232,14 +220,16 @@
 
 		syncAccept: function ( event ) {
 
-			console.log(this.dataSync.checkout);
+			// When user accepts a choice on a conflicted field
+			var $target = $(event.currentTarget), // Choice selected by user
+				selector = $target.data('sync-for'), // Field selector to choice
+				value = $target.data('sync-value'), // Value of the choice
+				$field = this.$el.find('[data-sync=' + selector + ']'), // Related field
+				$choices = this.$el.find('[data-sync-for=' + selector + ']'); // All choices for this field
 
-			var $target = $(event.currentTarget),
-				value = $target.attr('data-sync-value');
-
-			$target.siblings('input, textarea').val(value).removeClass('sync-error').addClass('sync-success');
-			$target.siblings('.sync-label').remove();
-			$target.remove();
+			// Set field value to userselection and remove error class, replace with success class
+			$field.val(value).removeClass('sync-error').addClass('sync-success');
+			$choices.remove(); // Remove choices once user has chosen
 
 			this.syncCheck();
 
@@ -247,17 +237,18 @@
 
 		syncCancel: function () {
 
-			if ( !_.isEqual( this.dataSync.checkout, this.model.toJSON() ) ) {
+			// Cancel submission
+			if ( !_.isEqual( this.sync.checkout, this.model.toJSON() ) ) {
 
-				this.dataSync.checkout = this.model.toJSON();
+				this.sync.checkout = this.model.toJSON();
 
 				var self = this,
-					fields = this.dataSync.objects;
+					fields = this.sync.elements;
 
 				$.each(fields, function ( index, obj ) {
 
 					var key = obj.attr('data-sync'),
-						value = self.dataSync.pendingAttributes[key];
+						value = self.sync.pendingAttributes[key];
 
 					obj.val(value); 
 
@@ -277,8 +268,9 @@
 
 		syncCheck: function () {
 
-			var numErrors = this.$el.find('.sync-label').length;
+			var numErrors = this.$el.find('.sync-accept').length;
 
+			// If there are no errors, display the ready state and allow the user to submit.
 			if ( numErrors < 1 ) {
 
 				this.syncReady();
@@ -289,9 +281,10 @@
 
 		syncLock: function () {
 
+			// Disable all fields until the user has confirmed warnings and or resolved conflicts
 			var self = this;
 
-			$.each(this.dataSync.objects, function ( key, value ) {
+			$.each(this.sync.elements, function ( key, value ) {
 				this.attr('disabled', 'disabled'); // Disable input fields
 			});
 
@@ -299,10 +292,11 @@
 
 		syncConflict: function () {
 
+			// Display conflict state
 			var self = this;
 
 			this.syncLock();
-			this.$el.find('.sync-label').on('click', function() { self.syncAccept(event) });
+			this.$el.find('.sync-accept').on('click', function() { self.syncAccept(event) });
 			this.$save.text('Submit').attr('disabled', 'disabled'); // Switch "Save" to "Submit"
 			this.$error.show(); // Show error message
 
@@ -310,6 +304,7 @@
 
 		syncWarning: function () {
 
+			// Display warning state
 			this.syncLock();
 			this.$save.text('Submit'); // Switch "Save" to "Submit"
 			this.$warning.show(); // Show error message
@@ -318,8 +313,8 @@
 
 		syncReady: function () {
 
+			// Display ready state
 			this.$error.hide();
-			this.$warning.hide();
 			this.$success.show();
 			this.$save.removeAttr('disabled');
 
@@ -327,10 +322,11 @@
 
 		syncClearWarnings: function () {
 
-			$.each(this.dataSync.objects, function ( key, value ) {
+			// Remove any warnings or messages
+			$.each(this.sync.elements, function ( key, value ) {
 				this.removeAttr('disabled').removeClass('sync-error sync-warning sync-success');; // Disable input fields
 			});
-			this.$el.find('.sync-label').remove(); // Remove error lables from DOM
+			this.$el.find('.sync-accept').remove(); // Remove error lables from DOM
 			this.$error.hide(); // Hide any error messages
 			this.$warning.hide(); // Hide any warning messagess
 			this.$success.hide() // Hide any success messages
@@ -340,10 +336,10 @@
 
 		syncRestore: function () {
 
-			// Restore Latest Synced Values
+			// Restore original values
 			var self = this;
 
-			$.each(this.dataSync.objects, function ( key, field ) {
+			$.each(this.sync.elements, function ( key, field ) {
 
 				field.val(self.model.get(key));
 
@@ -353,10 +349,10 @@
 
 	});
 
-	return Sync;
+	return Backbone;
 
 	})(Backbone, _, window.jQuery || window.Zepto || window.ender);
 	
-	return Backbone.Sync;
+	return Backbone;
 
 }));
