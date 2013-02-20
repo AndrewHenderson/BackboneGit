@@ -1,4 +1,4 @@
-BackboneGit
-===========
+Backbone Resolution
+===================
 
-Manage conflicts client-side when committing your Backbone model to the server.
+Extend Backbone's View to allow client-side conflict management when a model is PUT to the server.
