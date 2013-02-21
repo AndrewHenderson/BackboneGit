@@ -4,21 +4,6 @@ body {
 	overflow-x: hidden;
   background: #f9f9f9;
 }
-div[data-role="header"] {   
-    display: block;   
-    z-index: 9999;   
-    background: #111;
-    height: 44px;   
-    width: 100%;     
-}
-div[data-role="header"] h1 {   
-    text-align: center;     
-    padding-right: 40px;   
-    color: white;   
-    font-weight: bold;   
-    font-size: 16px;
-    margin:0;
-}
 
 .page {
   padding-top: 20px;
@@ -59,7 +44,7 @@ input.sync-error:focused, textarea.sync-error:focused {
 	box-sizing: border-box;
 	width: 60%;
 }
-.sync-accept {
+.sync-resolve {
 	float: left;
 	border: 1px solid #B94A48;
 	border-radius: 5px;

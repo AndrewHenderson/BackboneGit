@@ -2,7 +2,10 @@ $(function(){
 
   // Model
   // =======
-  var Model = Backbone.Model.extend({ urlRoot: 'api/user'});
+  var Model = Backbone.Model.extend({
+    urlRoot: 'api/user',
+    idAttribute: '_id'
+  });
 
   var model = new Model();
 
