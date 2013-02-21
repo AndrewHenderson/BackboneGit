@@ -1,7 +1,7 @@
 /**
- * |-------------------------|
- * |   Backbone Resolution   |
- * |-------------------------|
+ * |--------------------|
+ * |   Backbone Merge   |
+ * |--------------------|
  */
 (function(root, factory) {
   // Set up Backbone appropriately for the environment.
@@ -27,11 +27,10 @@
 
     syncInit: function () {
 
-      console.log(this);
-
       // Construct dataSync Object
       this.sync = {};
-      this.sync.hook = 'data-sync'; // CHANGE IF YOU WOULD LIKE TO USE A CUSTOM DATA ATTRIBUTE
+      this.sync.hook = this.syncHook || 'data-sync'; // USE SYNCHOOK IF YOU WOULD LIKE TO USE A CUSTOM DATA ATTRIBUTE
+      this.sync.key = this.syncKey || '_rev';
       this.sync.checkout = this.model.toJSON(); // Cache the latest model from the server
       this.sync.elements = {}; // Used to store array of objects in view using dataSync
 
@@ -47,10 +46,11 @@
 
       // Cache this view's *Sync* elements
       var self = this;
-      this.$save = this.$el.find('.sync-save');
-      this.$error = this.$el.find('.sync-error');
-      this.$warning = this.$el.find('.sync-warning');
-      this.$success = this.$el.find('.sync-success');
+      this.$save = this.$('#sync-save');
+      this.$cancel = this.$('#sync-cancel');
+      this.$error = this.$('.sync-error');
+      this.$warning = this.$('.sync-warning');
+      this.$success = this.$('.sync-success');
 
       this.$el.on('click', '#sync-save', function() { self.syncSave(); });
       this.$el.on('click', '#sync-cancel', function () { self.syncCancel(); });
@@ -68,82 +68,34 @@
       return _syncNewAttrs;
     },
 
-    syncSave: function (event) {
-
-      // Only execute if the user has changed the model
-      if ( !_.isEqual( this.model.toJSON(), this.syncNewAttrs() ) ) {
-
-        // Create package to send to server
-        var self = this,
-           clientPackage = {},
-           checkout = this.sync.checkout, // local ref to latest checkout of model
-           newAttrs = this.syncNewAttrs();
-        clientPackage.timestamp = checkout.timestamp; // Put checkout timestamp in package
-
-        // Compare submitted values to latest checkout
-        $.each(newAttrs, function (key, value) {
-
-          var newVal = newAttrs[key],
-            checkoutVal = checkout[key];
-
-          if ( newVal !== checkoutVal ) {
-            
-            clientPackage[key] = newVal; // If values don't match, add them to the package
-          }
-        });
-
-        this.model.save(clientPackage); // Send package to server for comparison
-      }
-    },
-
-    compareOnServer: function (clientPackage) {
-
-      // TODO: This functionality needs to occur on the server
-
-      console.log('Client package: ', clientPackage);
-
-      // Faking model in database
-      // var serverModel = {
-      //   first: 'Steve',
-      //   last: 'Evans',
-      //   city: 'Los Angeles',
-      //   state: 'California',
-      //   bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.',
-      //   timestamp: 'Mon Nov 12 2012 11:35:00 GMT-0800 (Pacific Standard Time)'
-      // }
+    syncSave: function (e) {
 
       var self = this;
+      var newAttrs = this.syncNewAttrs();
 
-      // If the timestamp is valid
-      if ( _.isEqual( clientPackage.timestamp, serverModel.timestamp ) ) {
-
-        $.each( _.omit(clientPackage, 'timestamp'), function (key, value) {
-
-          // Overwrite the server values with the client values
-          serverModel[key] = clientPackage[key];
+      // Only execute if the user has changed the fields
+      if ( !_.isEqual( this.model.toJSON(), newAttrs ) ) {
+        self.model.save(newAttrs, {wait: true})
+        .done(function(model, textStatus, jqXHR){
+          console.log('success!');
+          // self.syncHandleResponse(200, model);
+        })
+        .fail(function(jqXHR, textStatus, errorThrown){
+          self.syncHandleError(JSON.parse( jqXHR.responseText ) );
         });
-
-        // Send back an success and the *updated* server model
-        this.syncHandleResponse(200, serverModel);
-      } else {
-
-        // Send back an error and the server model
-        this.syncHandleResponse(500, serverModel);
       }
     },
 
-    syncHandleResponse: function ( message, serverModel ) {
+    syncHandleError:  function (serverModel) {
+      
+      // console.log('Conflict - Server: ', serverModel._rev, ', Submitted: ', this.model.toJSON()._rev );
+      this.model.set( this.sync.key, serverModel[this.sync.key], {silent: true} );
 
-      if ( message === 200 ) {
-
-        console.log("Success!");
-        // Successful submission
-        this.model.set( serverModel );
-        this.sync.checkout = serverModel;
+      // If the data entered had no conflicts despite the incorrect _rev, re-submit silently.
+      if ( _.isEqual( this.syncNewAttrs(), _.omit(serverModel, [this.model.idAttribute, this.sync.key]) ) ) {
+        this.syncSave();
       } else {
-
-        console.log('Conflict - Server: ', serverModel.timestamp, ', Submitted: ', this.model.toJSON().timestamp );
-
+        console.log(this.model);
         // Failed submission
         var self = this,
           model = this.model.toJSON(),
@@ -154,7 +106,7 @@
         var clientData = {},
           serverData = {};
 
-        $.each( _.omit(serverModel, 'timestamp'), function ( key, value ) {
+        $.each(serverModel, function (key, value) {
 
           var serverVal = value,
             origVal = model[key],
@@ -166,9 +118,9 @@
             if ( origVal !== newVal && origVal !== serverVal && newVal !== serverVal ) {
 
               // Error: Client to resolve conflicts
-              console.log('Conflict - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
+              // console.log('Conflict - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
 
-              selector.addClass('sync-error').after('<span class="sync-accept alert alert-error" data-sync-for="' + key + '" data-sync-value="' + serverVal + '" title="Click to Accept">Theirs: ' + serverVal + '</span>').after('<span class="sync-accept alert alert-error" data-sync-for="' + key + '" data-sync-value="' + newVal + '" title="Click to Accept">Mine: ' + newVal + '</span>');
+              selector.addClass('sync-error').after('<span class="sync-resolve alert alert-error" data-sync-for="' + key + '" data-sync-value="' + serverVal + '" title="Click to Accept">Theirs: ' + serverVal + '</span>').after('<span class="sync-resolve alert alert-error" data-sync-for="' + key + '" data-sync-value="' + newVal + '" title="Click to Accept">Mine: ' + newVal + '</span>');
             
               clientData[key] = newVal;
               serverData[key] = serverVal;
@@ -177,9 +129,9 @@
 
             } else if ( origVal !== serverVal && newVal !== serverVal ) {
 
-              console.log('Warning - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
-
               // Warning: Client must accept updates to commit.
+              // console.log('Warning - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
+
               selector.val(serverVal).addClass('sync-warning');
 
               clientData[key] = newVal;
@@ -189,12 +141,6 @@
             }
           }
         });
-
-        // If the data entered had no conflicts despite the incorrect timestamp, re-submit silently.
-        if ( _.isEqual( clientData, serverData ) ) {
-
-          this.syncSave();
-        }
       }
     },
 
@@ -217,12 +163,13 @@
     syncCancel: function () {
 
       // Cancel submission
-      if ( !_.isEqual( this.sync.checkout, this.model.toJSON() ) ) {
+      if ( !_.isEqual( this.sync.checkout, this.model.previousAttributes() ) ) {
 
-        this.sync.checkout = this.model.toJSON();
+        this.model.set(this.model.previousAttributes(), {silent: true});
+        this.sync.checkout = this.model.previousAttributes();
 
         var self = this,
-          fields = this.sync.elements;
+            fields = this.sync.elements;
 
         $.each(fields, function ( index, obj ) {
 
@@ -243,11 +190,10 @@
 
     syncCheck: function () {
 
-      var numErrors = this.$el.find('.sync-accept').length;
+      var numErrors = this.$el.find('.sync-resolve').length;
 
       // If there are no errors, display the ready state and allow the user to submit.
       if ( numErrors < 1 ) {
-
         this.syncReady();
       }
     },
@@ -268,7 +214,7 @@
       var self = this;
 
       this.syncLock();
-      this.$el.find('.sync-accept').on('click', function() { self.syncAccept(event) });
+      this.$('.sync-resolve').on('click', function() { self.syncAccept(event) });
       this.$save.text('Submit').attr('disabled', 'disabled'); // Switch "Save" to "Submit"
       this.$error.show(); // Show error message
     },
@@ -295,7 +241,7 @@
       $.each(this.sync.elements, function ( key, value ) {
         this.removeAttr('disabled').removeClass('sync-error sync-warning sync-success');; // Disable input fields
       });
-      this.$el.find('.sync-accept').remove(); // Remove error lables from DOM
+      this.$('.sync-resolve').remove(); // Remove error lables from DOM
       this.$error.hide(); // Hide any error messages
       this.$warning.hide(); // Hide any warning messagess
       this.$success.hide() // Hide any success messages
@@ -308,7 +254,6 @@
       var self = this;
 
       $.each(this.sync.elements, function ( key, field ) {
-
         field.val(self.model.get(key));
       });
     }
