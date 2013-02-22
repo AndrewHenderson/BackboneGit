@@ -28,7 +28,7 @@ app.get('/api/user', function(req, res){
     last: 'Lebowski',
     city: 'Los Angeles',
     state: 'California',
-    bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.',
+    quote: "I'll tell you what I'm blathering about... I've got information man! New shit has come to light! And shit... man, she kidnapped herself. Well sure, man. Look at it... a young trophy wife, in the parlance of our times, you know, and she, uh, uh, owes money all over town, including to known pornographers, and that's cool... that's, that's cool, I'm, I'm saying, she needs money, man. And of course they're going to say that they didn't get it, because... she wants more, man! She's got to feed the monkey, I mean uh... hasn't that ever occurred to you, man? Sir?.",
   });
 });
 app.put('/api/user/:id', function(req, res){
@@ -42,8 +42,8 @@ app.put('/api/user/:id', function(req, res){
       last: 'Sobchak',
       city: 'Los Angeles',
       state: 'California',
-      bio: 'Sartorial vegan fixie enim wayfarers. Cardigan officia bicycle rights, beard thundercats small batch mustache salvia cosby sweater enim. American apparel tattooed culpa, duis craft beer vero food truck fingerstache shoreditch ethical gastropub squid seitan. Hoodie high life +1 nulla, cupidatat kogi proident wolf sunt wayfarers irure. Sartorial eu dolor, deserunt before they sold out organic forage master cleanse. Scenester nesciunt iphone delectus blog skateboard. Vice kale chips minim pinterest bespoke.',
-    });
+      quote: "I'll tell you what I'm blathering about... I've got information man! New shit has come to light! And shit... man, she kidnapped herself. Well sure, man. Look at it... a young trophy wife, in the parlance of our times, you know, and she, uh, uh, owes money all over town, including to known pornographers, and that's cool... that's, that's cool, I'm, I'm saying, she needs money, man. And of course they're going to say that they didn't get it, because... she wants more, man! She's got to feed the monkey, I mean uh... hasn't that ever occurred to you, man? Sir?.",
+  });
   } else {
     res.send(200, req.body);
   }

@@ -9,8 +9,6 @@ $(function(){
 
   var model = new Model();
 
-  model.fetch();
-
   // View
   // =======
   var View = Backbone.View.extend({
@@ -19,11 +17,16 @@ $(function(){
 
     initialize: function () {
 
-      this.listenTo( this.model, 'change', this.render, this );
+      var self = this;
+
+      this.model.fetch()
+      .done(function(){
+        self.render();
+      });
     },
 
     render: function () {
-      
+
       this.$el.html( this.template( this.model.toJSON() ) ); // Render
       this.syncInit(); // Sync Init
 

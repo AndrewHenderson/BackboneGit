@@ -29,42 +29,53 @@
 
       syncInit: function () {
 
-        // Cache this view's *Sync* elements
-        var self = this;
-        this.$save = this.$('.sync-save');
-        this.$cancel = this.$('.sync-cancel');
-        this.$error = this.$('.sync-error');
-        this.$warning = this.$('.sync-warning');
-        this.$success = this.$('.sync-success');
-
         if ( !this.syncInitialized ) {
+
+          var self = this;
+
           // Construct dataSync Object
           this.sync = {};
           // Configuration
           this.sync.hook = this.syncHook || 'name'; // CAN BE CUSTOMIZED BY VIEW
           this.sync.key = this.syncKey || '_rev';
-          // Cache
           this.sync.checkout = this.model.toJSON(); // Latest model from the server
-          this.sync.elements = {}; // Used to store array of objects in view using dataSync
-
-          // Construct your dataSync object array
-          var self = this,
-              hook = this.sync.hook,
-              array = this.$('.sync-form [' + hook + ']');
-
-          $.each(array, function ( index, el ) {
-            var key = $(el).attr(hook); // Value of item's data attribute
-            self.sync.elements[key] = $(this); // Cache jQuery wrapped reference of object
-          });
 
           // Bindings
-          this.$el.parent().on('click', '.sync-save', function() { self.syncSave(); });
-          this.$el.parent().on('click', '.sync-cancel', function () { self.syncCancel(); });
+          this.$el.on('click', '.sync-save', function(e) { self.syncSave(e); });
+          this.$el.on('click', '.sync-cancel', function(e) { self.syncCancel(e); });
 
           this.syncInitialized = true;
 
         }
+      },
 
+      syncCacheForm: function(e, callback) {
+
+        // Cache this form's *sync* elements
+        var self = this;
+        var $form = $(e.currentTarget).parents('.sync-form');
+
+        this.$save = $form.find('.sync-save');
+        this.$cancel = $form.find('.sync-cancel');
+        this.$error = $form.find('.sync-message.sync-error');
+        this.$warning = $form.find('.sync-message.sync-warning');
+        this.$resolved = $form.find('.sync-message.sync-resolved');
+        this.$success = $form.find('.sync-message.sync-success');
+
+        // Cache
+        this.sync.elements = {}; // Used to store array of objects in view using dataSync
+
+        // Construct your dataSync object array
+        var self = this,
+            hook = this.sync.hook,
+            fieldArray = $form.find('[' + hook + ']');
+
+        $.each(fieldArray, function ( index, field ) {
+          var key = $(field).attr(hook); // Value of item's data attribute
+          self.sync.elements[key] = $(this); // Cache jQuery wrapped reference of object
+        });
+
+        callback(self);
       },
 
       syncOrigAttrs: function() {
@@ -86,25 +97,30 @@
         return _syncNewAttrs;
       },
 
-      syncSave: function ( e ) {
+      syncSave: function (e) {
 
-        var self = this;
-        var newAttrs = this.syncNewAttrs();
-        var origAttrs = this.syncOrigAttrs();
-        console.log(origAttrs, newAttrs);
-        // Only execute if the user has changed the fields
-        if ( !_.isEqual( origAttrs, newAttrs ) ) {
-          self.model.save(newAttrs, {wait: true})
-          .done(function(model, textStatus, jqXHR){
-            self.sync.checkout = model;
-            self.syncClearWarnings();
-          })
-          .fail(function(jqXHR, textStatus, errorThrown){
-            var model = JSON.parse( jqXHR.responseText );
-            self.model.set( self.sync.key, model[self.sync.key], {silent: true} );
-            self.syncHandleError( model );
-          });
-        }
+        this.syncCacheForm(e, function(self){
+          // Attrs
+          var newAttrs = self.syncNewAttrs();
+          var origAttrs = self.syncOrigAttrs();
+          
+          // Save: only execute if the user has changed the fields
+          if ( !_.isEqual( origAttrs, newAttrs ) ) {
+            self.model.save(newAttrs, {wait: true})
+            .done(function(model, textStatus, jqXHR){
+              self.sync.checkout = model;
+              self.syncClearWarnings();
+              self.syncSaveSuccess();
+            })
+            .fail(function(jqXHR, textStatus, errorThrown){
+              var model = JSON.parse( jqXHR.responseText );
+              self.model.set( self.sync.key, model[self.sync.key], {silent: true} );
+              self.syncHandleError( model );
+            });
+          }
+        });
+
+        return false;
       },
 
       syncHandleError:  function ( serverModel ) {
@@ -113,7 +129,7 @@
 
         // If the data entered had no conflicts despite the incorrect version key, act like it was successful.
         if ( _.isEqual( this.syncNewAttrs(), _.pick(serverModel, _.keys(this.sync.elements)  ) ) ) {
-          console.log('All set');
+          this.syncSaveSuccess();
         } else {
 
           // Failed submission
@@ -128,9 +144,9 @@
           $.each(serverModel, function ( key, value ) {
 
             var serverVal = value,
-                origVal = model[key],
-                newVal = newAttrs[key],
-                selector = self.sync.elements[key];
+                origVal = model[ key ],
+                newVal = newAttrs[ key ],
+                selector = self.sync.elements[ key ];
 
             if ( typeof newVal !== 'undefined' ) {
 
@@ -139,7 +155,15 @@
                 // Error: Client to resolve conflicts
                 // console.log('Conflict - Server: ', serverVal, ', Checkout: ', origVal, ', Entered: ', newVal );
 
-                selector.addClass('sync-error').after('<span class="sync-resolve alert alert-error" data-sync-for="' + key + '" data-sync-value="' + serverVal + '" title="Click to Accept">Theirs: ' + serverVal + '</span>').after('<span class="sync-resolve alert alert-error" data-sync-for="' + key + '" data-sync-value="' + newVal + '" title="Click to Accept">Mine: ' + newVal + '</span>');
+                selector.addClass('sync-error')
+                  .after('<span class="sync-resolve alert alert-error" data-sync-for="' +
+                    key + '" data-sync-value="' +
+                    serverVal + '" title="Click to Accept">Theirs: ' +
+                    serverVal + '</span>').after('<span class="sync-resolve alert alert-error" data-sync-for="' +
+                    key + '" data-sync-value="' + 
+                    newVal + '" title="Click to Accept">Mine: ' + 
+                    newVal + '</span>'
+                  );
               
                 clientData[key] = newVal;
                 serverData[key] = serverVal;
@@ -163,7 +187,7 @@
         }
       },
 
-      syncAccept: function ( event ) {
+      syncAccept: function (e) {
 
         // When user accepts a choice on a conflicted field
         var $target = $(event.currentTarget), // Choice selected by user
@@ -179,23 +203,27 @@
         this.syncCheck();
       },
 
-      syncCancel: function () {
+      syncCancel: function (e) {
 
-        if ( _.isEmpty( this.model.previousAttributes() ) || _.isEqual( this.model.get(this.sync.key), this.sync.checkout[this.sync.key] ) ) {
-          this.syncRestoreOrigFields();
-        } else {
-          this.syncRestoreModel();
-          this.syncRestorePendingFields();
-        }
+        this.syncCacheForm(e, function(self){
 
-        this.syncClearWarnings();
+          if ( _.isEmpty( self.model.previousAttributes() ) || _.isEqual( self.model.get(self.sync.key), self.sync.checkout[self.sync.key] ) ) {
+            self.syncRestoreModel();
+            self.syncRestoreOrigFields();
+          } else {
+            self.syncRestoreModel();
+            self.syncRestorePendingFields();
+          }
+
+          self.syncClearWarnings();
+        });
 
         return false;
       },
 
       syncCheck: function () {
 
-        var numErrors = this.$el.find('.sync-resolve').length;
+        var numErrors = this.$('.sync-resolve').length;
 
         // If there are no errors, display the ready state and allow the user to submit.
         if ( numErrors < 1 ) {
@@ -219,7 +247,7 @@
         var self = this;
 
         this.syncLock();
-        this.$('.sync-resolve').on('click', function() { self.syncAccept(event) });
+        this.$('.sync-resolve').on('click', function() { self.syncAccept() });
         this.$save.text('Submit').attr('disabled', 'disabled'); // Switch "Save" to "Submit"
         this.$error.show().css("visibility", "visible"); // Show error message
       },
@@ -236,7 +264,7 @@
 
         // Display ready state
         this.$error.hide();
-        this.$success.show().css("visibility", "visible");
+        this.$resolved.show().css("visibility", "visible");
         this.$save.removeAttr('disabled');
       },
 
@@ -249,12 +277,11 @@
         this.$('.sync-resolve').remove(); // Remove error lables from DOM
         this.$error.hide(); // Hide any error messages
         this.$warning.hide(); // Hide any warning messagess
-        this.$success.hide() // Hide any success messages
+        this.$resolved.hide() // Hide any success messages
         this.$save.removeAttr('disabled').text('Save'); // Restore save button
       },
 
       syncRestoreModel: function() {
-
         // Restore original values
         if ( this.model.previousAttributes() ) {
           this.model.set(this.sync.checkout, {silent: true});
@@ -280,6 +307,19 @@
           var val = field.attr(self.sync.hook),
               prev = self.sync.checkout[val];
           field.val(prev); 
+        });
+      },
+
+      syncSaveSuccess: function () {
+
+        this.$success.css("visibility", "visible").show({
+          duration: 0,
+          complete: function(){
+            var self = this;
+            setTimeout(function(){
+              $(self).fadeOut();
+            }, 3000);
+          }
         });
       }
     });
