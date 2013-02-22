@@ -24,40 +24,42 @@
 
   <!-- Templates -->
   <script id="profile-tpl" type="text/template">
-    <span class="response-label"></span>
-    <div data-role="fieldcontain" class="cf">
-      <label for="first">First Name</label>
-      <input type="text" name="first" id="first" value="<%= first %>" placeholder="First Name"  data-sync="first"/>
+    <div class="sync-form">
+      <span class="response-label"></span>
+      <div data-role="fieldcontain" class="cf">
+        <label for="first">First Name</label>
+        <input type="text" name="first" id="first" value="<%= first %>" placeholder="First Name"/>
+      </div>
+      <div data-role="fieldcontain" class="cf">
+        <label for="last">Last Name</label>
+        <input type="text" name="last" id="last" value="<%= last %>" placeholder="Last Name"/>
+      </div>
+      <div data-role="fieldcontain" class="cf">
+        <label for="city">City</label>
+        <input type="text" name="city" id="city" value="<%= city %>" placeholder="City"/>
+      </div>
+      <div data-role="fieldcontain" class="cf">
+        <label for="state">State</label>
+        <input type="text" name="state" id="state" value="<%= state %>" placeholder="State"/>
+      </div>
+      <div data-role="fieldcontain" class="cf">
+        <label for="bio">Biography</label>
+        <textarea name="bio" id="bio" placeholder="Biography" rows="6"><%= bio %></textarea>
+      </div>
+      <div class="sync-message sync-error alert alert-error hidden">*You are attempting to modify fields that have changed since you checked out this record.
+        <br><strong>If you would still like to save your changes:</strong>
+        <br>1) Please resolve the conflicts by selecting which version you would like to save. Do so by clicking the label to the right of the field.
+        <br>2) Once all conflicts are resolved, click the "Submit" button below.
+      </div>
+      <div class="sync-message sync-warning alert hidden">*The highlighted fields have changed since you checked out this record.
+        <br>While these are not in conflict, you may want to review them before saving your changes.
+      </div>
+      <div class="sync-message sync-success alert alert-success hidden">
+        Conflicts resolved. Click "Submit" to save your changes.
+      </div>
+      <button class="btn sync-cancel">Cancel</button>
+      <button class="btn btn-primary sync-save">Save</button>
     </div>
-    <div data-role="fieldcontain" class="cf">
-      <label for="last">Last Name</label>
-      <input type="text" name="last" id="last" value="<%= last %>" placeholder="Last Name" data-sync="last"/>
-    </div>
-    <div data-role="fieldcontain" class="cf">
-      <label for="city">City</label>
-      <input type="text" name="city" id="city" value="<%= city %>" placeholder="City" data-sync="city"/>
-    </div>
-    <div data-role="fieldcontain" class="cf">
-      <label for="state">State</label>
-      <input type="text" name="state" id="state" value="<%= state %>" placeholder="State" data-sync="state"/>
-    </div>
-    <div data-role="fieldcontain" class="cf">
-      <label for="bio">Biography</label>
-      <textarea name="bio" id="bio" placeholder="Biography" rows="6" data-sync="bio"><%= bio %></textarea>
-    </div>
-    <div class="sync-message sync-error alert alert-error">*You are attempting to modify fields that have changed since you checked out this record.
-      <br><strong>If you would still like to save your changes:</strong>
-      <br>1) Please resolve the conflicts by selecting which version you would like to save. Do so by clicking the label to the right of the field.
-      <br>2) Once all conflicts are resolved, click the "Submit" button below.
-    </div>
-    <div class="sync-message sync-warning alert">*The highlighted fields have changed since you checked out this record.
-      <br>While these are not in conflict, you may want to review them before saving your changes.
-    </div>
-    <div class="sync-message sync-success alert alert-success">
-      Conflicts resolved. Click "Submit" to save your changes.
-    </div>
-    <button id="sync-cancel" class="btn">Cancel</button>
-    <button id="sync-save" class="btn btn-primary">Save</button>
   </script>
 </body>
 </html>

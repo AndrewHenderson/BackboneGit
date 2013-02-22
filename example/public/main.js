@@ -23,7 +23,7 @@ $(function(){
     },
 
     render: function () {
-
+      
       this.$el.html( this.template( this.model.toJSON() ) ); // Render
       this.syncInit(); // Sync Init
 

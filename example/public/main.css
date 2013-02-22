@@ -36,33 +36,25 @@ input.sync-error:focused, textarea.sync-error:focused {
 	box-shadow: 0px 0px 12px red;
 	outline: none;
 }
-.alert {
+/*.alert {
 	margin-bottom: 10px;
 }
 .sync-message {
 	display: none;
 	box-sizing: border-box;
 	width: 60%;
-}
+}*/
 .sync-resolve {
 	float: left;
-	border: 1px solid #B94A48;
+	border: 1px solid ##b94a48;
 	border-radius: 5px;
 	padding: 4px 5px 5px;
 	margin: 0 0 0 10px;
 	cursor: pointer;
 	box-shadow: 0 1ox 1px rgba(0,0,0,0.2);
 }
-.sync-accept:hover {
+.sync-resolve:hover {
 	background-color: #f9eded;
-}
-.sync-accept.sync-success {
-	color: green;
-	border-color: green;
-}
-.sync-accept.sync-error {
-	color: red;
-	border-color: red;
 }
 
 /* utils */
